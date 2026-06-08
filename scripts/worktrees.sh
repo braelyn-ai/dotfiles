@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-BASE="/Users/braelynboynton/Developer"
+BASE="$HOME/Developer"
 DEV_LAYOUT="$BASE/dotfiles/.config/zellij/layouts/dev-tab.kdl"
 
 CYAN="\033[36m"
