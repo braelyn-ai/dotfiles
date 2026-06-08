@@ -166,6 +166,9 @@ if ! command -v figlet &>/dev/null; then
   if command -v brew &>/dev/null; then
     echo "Installing figlet..."
     brew install figlet 2>/dev/null || true
+  elif command -v apt &>/dev/null; then
+    echo "Installing figlet..."
+    sudo apt install -y figlet 2>/dev/null || true
   fi
 fi
 
@@ -174,6 +177,19 @@ if ! command -v fortune &>/dev/null; then
   if command -v brew &>/dev/null; then
     echo "Installing fortune..."
     brew install fortune 2>/dev/null || true
+  elif command -v apt &>/dev/null; then
+    echo "Installing fortune..."
+    sudo apt install -y fortune-mod 2>/dev/null || true
+  fi
+fi
+
+# Install epic figlet font if not present
+if command -v figlet &>/dev/null; then
+  FIGLET_FONTDIR="$(figlet -I2 2>/dev/null)"
+  if [[ -n "$FIGLET_FONTDIR" ]] && [[ ! -f "$FIGLET_FONTDIR/epic.flf" ]]; then
+    echo "Installing epic figlet font..."
+    sudo curl -so "$FIGLET_FONTDIR/epic.flf" \
+      https://raw.githubusercontent.com/xero/figlet-fonts/master/Epic.flf 2>/dev/null || true
   fi
 fi
 
@@ -192,3 +208,23 @@ if command -v fortune &>/dev/null; then
   fortune
   echo ""
 fi
+export PATH="$HOME/.npm-global/bin:$PATH"
+
+# Created by `pipx` on 2026-02-16 06:59:14
+export PATH="$PATH:$HOME/.local/bin"
+
+# OpenClaw Completion
+[[ -f "$HOME/.openclaw/completions/openclaw.zsh" ]] && source "$HOME/.openclaw/completions/openclaw.zsh"
+# Browserbase API
+[[ -f "$HOME/.openclaw/secrets/browserbase.env" ]] && source "$HOME/.openclaw/secrets/browserbase.env"
+
+eval "$(atuin ai init zsh)"
+
+cockpit() {
+  local session="${PWD##*/}"
+  if zellij list-sessions 2>/dev/null | sed $'s/\x1b\[[0-9;]*m//g' | grep -q "^${session} "; then
+    zellij attach "$session"
+  else
+    zellij -l cockpit -s "$session"
+  fi
+}

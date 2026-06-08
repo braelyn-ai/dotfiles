@@ -1,0 +1,43 @@
+layout {
+    default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="tab-bar"
+        }
+        children
+        pane size=2 borderless=true {
+            plugin location="status-bar"
+        }
+    }
+    tab name="cockpit" focus=true {
+        pane command="python3" borderless=true {
+            args "/Users/braelynboynton/Developer/dotfiles/scripts/starfield.py"
+        }
+        floating_panes {
+            pane focus=true pinned=true {
+                x "25%"
+                y "20%"
+                width "23%"
+                height "55%"
+                name "terminal"
+            }
+            pane pinned=true {
+                x "50%"
+                y "20%"
+                width "22%"
+                height "25%"
+                name "worktrees"
+                command "zsh"
+                args "/Users/braelynboynton/Developer/dotfiles/scripts/worktrees.sh"
+            }
+            pane pinned=true {
+                x "50%"
+                y "47%"
+                width "22%"
+                height "28%"
+                name "mob"
+                command "zsh"
+                args "-c" "MOB_FG=#cdd6f4 MOB_BG=#1e1e2e exec mob cat"
+            }
+        }
+    }
+}

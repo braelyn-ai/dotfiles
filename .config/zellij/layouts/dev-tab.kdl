@@ -1,0 +1,31 @@
+layout {
+    pane size=1 borderless=true {
+        plugin location="tab-bar"
+    }
+    pane split_direction="vertical" {
+        pane size="33%" split_direction="horizontal" {
+            pane name="cmd"
+            pane size="15%" name="agents" {
+                command "zsh"
+                args "-c" "MOB_FG=#cdd6f4 MOB_BG=#1e1e2e exec mob cat"
+            }
+        }
+        pane split_direction="horizontal" {
+            pane size="50%" split_direction="vertical" {
+                pane name="claude-1" {
+                    command "claude"
+                }
+                pane name="claude-2" {
+                    command "claude"
+                }
+            }
+            pane name="diffs" {
+                command "lumen"
+                args "diff" "--watch"
+            }
+        }
+    }
+    pane size=2 borderless=true {
+        plugin location="status-bar"
+    }
+}
