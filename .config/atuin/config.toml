@@ -36,10 +36,6 @@
 ## set it to 0 to sync after every command
 # sync_frequency = "10m"
 
-## which search mode to use
-## possible values: prefix, fulltext, fuzzy, skim
-search_mode = "daemon-fuzzy"
-
 ## which filter mode to use by default
 ## possible values: "global", "host", "session", "session-preload", "directory", "workspace"
 ## consider using search.filters to customize the enablement and order of filter modes
