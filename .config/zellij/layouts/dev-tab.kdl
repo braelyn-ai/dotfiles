@@ -12,10 +12,10 @@ layout {
         }
         pane split_direction="horizontal" {
             pane size="50%" split_direction="vertical" {
-                pane name="claude-1" {
-                    command "claude"
+                pane name="agent-1" {
+                    command "codex"
                 }
-                pane name="claude-2" {
+                pane name="agent-2" {
                     command "claude"
                 }
             }

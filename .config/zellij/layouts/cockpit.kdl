@@ -10,7 +10,7 @@ layout {
     }
     tab name="cockpit" focus=true {
         pane command="python3" borderless=true {
-            args "~/Developer/dotfiles/scripts/starfield.py"
+            args "../dotfiles/scripts/starfield.py"
         }
         floating_panes {
             pane focus=true pinned=true {
@@ -27,7 +27,7 @@ layout {
                 height "25%"
                 name "worktrees"
                 command "zsh"
-                args "~/Developer/dotfiles/scripts/worktrees.sh"
+                args "../dotfiles/scripts/worktrees.sh"
             }
             pane pinned=true {
                 x "50%"
