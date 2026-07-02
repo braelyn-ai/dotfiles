@@ -1,14 +1,22 @@
 {
   "purchased": [
-    "yarn"
+    "yarn",
+    "fish",
+    "plant"
   ],
-  "equipped": [
-    "yarn"
-  ],
+  "equipped": [],
   "positions": {
     "yarn": [
-      114,
-      2
+      50,
+      9
+    ],
+    "fish": [
+      42,
+      3
+    ],
+    "plant": [
+      2,
+      4
     ]
   }
 }
