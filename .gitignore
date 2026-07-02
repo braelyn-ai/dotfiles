@@ -1,2 +1,6 @@
 .config/atuin/atuin-receipt.json
 .config/atuin-ai/atuin-ai-receipt.json
+
+.config/mob/gems.json
+.config/mob/xp.json
+.config/mob/pets.json
