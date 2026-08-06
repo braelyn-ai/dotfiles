@@ -112,12 +112,39 @@ zle -N edit-command-line
 bindkey '\C-x\C-e' edit-command-line
 bindkey "^[m" copy-prev-shell-word
 
-# zsh-autosuggestions / zsh-syntax-highlighting (via Homebrew)
-source "$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
-source "$(brew --prefix)/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+# Homebrew, if installed (macOS ARM/Intel, or Linuxbrew)
+if ! command -v brew &>/dev/null; then
+  for _brew in /opt/homebrew/bin/brew /usr/local/bin/brew \
+               /home/linuxbrew/.linuxbrew/bin/brew "$HOME/.linuxbrew/bin/brew"; do
+    if [[ -x "$_brew" ]]; then
+      eval "$("$_brew" shellenv)"
+      break
+    fi
+  done
+  unset _brew
+fi
+# shellenv sets HOMEBREW_PREFIX; fall back for a brew already on PATH
+if [[ -z "$HOMEBREW_PREFIX" ]] && command -v brew &>/dev/null; then
+  export HOMEBREW_PREFIX="$(brew --prefix)"
+fi
+
+# zsh-autosuggestions / zsh-syntax-highlighting (Homebrew or distro packages)
+for _plugin in zsh-autosuggestions zsh-syntax-highlighting; do
+  for _dir in \
+    "${HOMEBREW_PREFIX:+$HOMEBREW_PREFIX/share/$_plugin}" \
+    "/usr/share/zsh/plugins/$_plugin" \
+    "/usr/share/$_plugin" \
+    "/usr/local/share/$_plugin"; do
+    if [[ -n "$_dir" && -r "$_dir/$_plugin.zsh" ]]; then
+      source "$_dir/$_plugin.zsh"
+      break
+    fi
+  done
+done
+unset _plugin _dir
 
 # bun completions
-[ -s "/Users/braelyn/.bun/_bun" ] && source "/Users/braelyn/.bun/_bun"
+[ -s "$HOME/.bun/_bun" ] && source "$HOME/.bun/_bun"
 
 # bun
 export BUN_INSTALL="$HOME/.bun"
@@ -133,8 +160,12 @@ if [[ -f "$HOME/.atuin/bin/env" ]]; then
 fi
 
 # opencode
-export PATH=/Users/braelyn/.opencode/bin:$PATH
-export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"
+[[ -d "$HOME/.opencode/bin" ]] && export PATH="$HOME/.opencode/bin:$PATH"
+
+# postgresql client from Homebrew, if installed
+if [[ -n "$HOMEBREW_PREFIX" && -d "$HOMEBREW_PREFIX/opt/postgresql@17/bin" ]]; then
+  export PATH="$HOMEBREW_PREFIX/opt/postgresql@17/bin:$PATH"
+fi
 
 
 # Load Angular CLI autocompletion.
@@ -201,7 +232,7 @@ export PATH="$PATH:$HOME/.local/bin"
 # Browserbase API
 [[ -f "$HOME/.openclaw/secrets/browserbase.env" ]] && source "$HOME/.openclaw/secrets/browserbase.env"
 
-eval "$(atuin ai init zsh)"
+command -v atuin &>/dev/null && eval "$(atuin ai init zsh)"
 
 cockpit() {
   local session="${PWD##*/}"
