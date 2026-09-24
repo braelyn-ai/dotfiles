@@ -17,18 +17,34 @@ flush_stdin() {
     while read -rsk1 -t 0.01 2>/dev/null; do :; done
 }
 
+# Holds the terminal in no-echo for the whole loop. Without this the tty
+# driver echoes each key on top of the one we print, so "12" arrives twice.
+tty_raw_begin() {
+    TTY_SAVED=$(stty -g 2>/dev/null)
+    [[ -n "$TTY_SAVED" ]] && stty -echo -icanon min 1 time 0 2>/dev/null
+}
+
+tty_raw_end() {
+    [[ -n "$TTY_SAVED" ]] && stty "$TTY_SAVED" 2>/dev/null
+    TTY_SAVED=""
+}
+
 read_line() {
     local prompt="$1"
+    local mode="${2:-text}"
+    local maxlen="${3:-0}"
+    local rc=0
     REPLY=""
+    tty_raw_begin
     printf "%b" "$prompt"
     while true; do
         read -rsk1 ch
         case "$ch" in
-            "$ESC") REPLY=""; printf "\n"; return 1 ;;
-            $'\n')
+            "$ESC") REPLY=""; printf "\n"; rc=1; break ;;
+            $'\n'|$'\r')
                 printf "\n"
-                [[ -z "$REPLY" ]] && return 1
-                return 0
+                [[ -z "$REPLY" ]] && rc=1
+                break
                 ;;
             $'\x7f'|$'\b')
                 if [[ -n "$REPLY" ]]; then
@@ -37,17 +53,42 @@ read_line() {
                 fi
                 ;;
             *)
+                [[ "$mode" == digits && "$ch" != [0-9] ]] && continue
+                [[ "$maxlen" -gt 0 && ${#REPLY} -ge "$maxlen" ]] && continue
                 REPLY+="$ch"
                 printf "%s" "$ch"
                 ;;
         esac
     done
+    tty_raw_end
+    return $rc
+}
+
+# Reads a worktree number of any width, submitted with enter. Leaves the
+# validated index in REPLY, or returns non-zero on cancel / bad input.
+read_index() {
+    local prompt="$1"
+    local count=${#WORKTREE_PATHS[@]}
+
+    read_line "$prompt" digits "${#count}" || return 1
+
+    local selection="$REPLY"
+    if [[ "$selection" -lt 1 ]] || [[ "$selection" -gt "$count" ]]; then
+        printf "  ${RED}invalid selection${RESET}\n"
+        sleep 1
+        return 1
+    fi
+
+    REPLY="$selection"
+    return 0
 }
 
 read_char() {
     local prompt="$1"
+    tty_raw_begin
     printf "%b" "$prompt"
     read -rsk1 REPLY
+    tty_raw_end
     printf "%s\n" "$REPLY"
     [[ "$REPLY" == "$ESC" ]] && return 1
     return 0
@@ -73,15 +114,15 @@ render() {
         WORKTREE_PATHS+=("$wt_path")
 
         if [[ -n "$branch" ]]; then
-            buf+="$(printf "  ${DIM}%d${RESET}  ${GREEN}%-26s${RESET} ${DIM}%s${RESET}  ${YELLOW}%s${RESET}" "$i" "$short_path" "${hash:0:7}" "$branch")\n"
+            buf+="$(printf "  ${DIM}%2d${RESET}  ${GREEN}%-26s${RESET} ${DIM}%s${RESET}  ${YELLOW}%s${RESET}" "$i" "$short_path" "${hash:0:7}" "$branch")\n"
         else
-            buf+="$(printf "  ${DIM}%d${RESET}  ${GREEN}%-26s${RESET} ${DIM}%s${RESET}" "$i" "$short_path" "${hash:0:7}")\n"
+            buf+="$(printf "  ${DIM}%2d${RESET}  ${GREEN}%-26s${RESET} ${DIM}%s${RESET}" "$i" "$short_path" "${hash:0:7}")\n"
         fi
         ((i++))
     done < <(git worktree list 2>/dev/null)
 
     buf+="$(printf "${DIM}  ─────────────────────────────────────────${RESET}")\n"
-    buf+="$(printf "  ${DIM}[n]ew  [d]elete  [o]pen #  [q]uit  esc cancel${RESET}")\n"
+    buf+="$(printf "  ${DIM}[n]ew  [d]elete  [o]pen  [q]uit  ${RESET}${DIM}number + enter  esc cancel${RESET}")\n"
 
     printf "\033[2J\033[H"
     printf "%b" "$buf"
@@ -122,16 +163,9 @@ prompt_delete() {
         return
     fi
 
-    read_char "\n  ${RED}delete which worktree? [1-${count}]:${RESET} " || return
-    local selection="$REPLY"
+    read_index "\n  ${RED}delete which worktree? [1-${count}]:${RESET} " || return
 
-    if ! [[ "$selection" =~ ^[0-9]+$ ]] || [[ "$selection" -lt 1 ]] || [[ "$selection" -gt "$count" ]]; then
-        printf "  ${RED}invalid selection${RESET}\n"
-        sleep 1
-        return
-    fi
-
-    local target="${WORKTREE_PATHS[$selection]}"
+    local target="${WORKTREE_PATHS[$REPLY]}"
     local short="${target#$BASE/}"
 
     read_char "  ${RED}remove ${BOLD}${short}${RESET}${RED}? [y/N]:${RESET} " || return
@@ -148,16 +182,9 @@ prompt_delete() {
 
 prompt_open() {
     local count=${#WORKTREE_PATHS[@]}
-    read_char "\n  ${CYAN}open which worktree? [1-${count}]:${RESET} " || return
-    local selection="$REPLY"
+    read_index "\n  ${CYAN}open which worktree? [1-${count}]:${RESET} " || return
 
-    if ! [[ "$selection" =~ ^[0-9]+$ ]] || [[ "$selection" -lt 1 ]] || [[ "$selection" -gt "$count" ]]; then
-        printf "  ${RED}invalid selection${RESET}\n"
-        sleep 1
-        return
-    fi
-
-    local target="${WORKTREE_PATHS[$selection]}"
+    local target="${WORKTREE_PATHS[$REPLY]}"
     local name="${target:t}"
 
     printf "  spawning dev tab for ${GREEN}%s${RESET}...\n" "$name"
